@@ -6,7 +6,7 @@
 #define PROJECT_OUTPUT_H
 
 
-#include <bits/unique_ptr.h>
+#include <memory>
 
 class Output {
 public:

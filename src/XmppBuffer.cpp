@@ -8,22 +8,57 @@
 using namespace std;
 using namespace gloox;
 
-XmppBuffer::XmppBuffer(const std::string &server, const std::string &password) {
-    JID jid{server};
-    m_client.reset(new Client(jid, password));
-    m_client->connect();
+Bot::Bot(const std::string &jid, const std::string &password) {
+    m_thread = thread([&]{
+        try {
+            m_client.reset(new Client({jid}, password));
+            m_client->connect();
+
+            unique_lock<mutex> lock(m_mutex);
+            while(!m_missingMessages.empty() || m_work){
+                if(!m_missingMessages.empty() && m_master){
+                    for(const auto &message : m_missingMessages){
+                        Message msg{Message::MessageType::Chat, m_master, message};
+                        m_client->send(msg);
+                    }
+                }
+                m_cond.wait(lock);
+            }
+        }catch (const exception& e){
+            cerr << e.what() << endl;
+        }
+    });
+}
+
+Bot::~Bot() {
+}
+
+void Bot::sendMessage(const std::string & message) {
+    unique_lock<mutex> lock(m_mutex);
+    m_missingMessages.push_back(message);
+    m_cond.notify_all();
+}
+
+void Bot::handleMessage(const gloox::Message & message, gloox::MessageSession *) {
+    unique_lock<mutex> lock(m_mutex);
+    m_master = message.from();
+    m_cond.notify_all();
+}
+
+
+XmppBuffer::XmppBuffer(const std::string &userJid, const std::string &password) :
+        m_buffer(1 << 12) {
+    setp(m_buffer.data(), m_buffer.data() + m_buffer.size());
+    m_bot.reset(new Bot(userJid, password));
 }
 
 XmppBuffer::~XmppBuffer() {
 }
 
-void XmppBuffer::handleMessage(const gloox::Message &msg, gloox::MessageSession *session) {
-}
-
 std::streambuf::int_type XmppBuffer::overflow(int c) {
-    size_t pos = _buffer.size();
-    _buffer.resize(_buffer.size() * 2);
-    setp(_buffer.data(), _buffer.data() + _buffer.size());
+    size_t pos = m_buffer.size();
+    m_buffer.resize(m_buffer.size() * 2);
+    setp(m_buffer.data(), m_buffer.data() + m_buffer.size());
     pbump(pos);
     *pptr() = c;
     pbump(1);
@@ -31,11 +66,8 @@ std::streambuf::int_type XmppBuffer::overflow(int c) {
 }
 
 int XmppBuffer::sync() {
-    // printf("%s", _buffer.data()); // output
-    JID jid{};
-    Message msg{Message::MessageType::Chat, jid, std::string{_buffer.data()} };
-    for (auto &i: _buffer) i = 0; // clean
-    setp(_buffer.data(), _buffer.data() + _buffer.size()); // reset
+    m_bot->sendMessage(std::string{m_buffer.data()});
+    for (auto &i: m_buffer) i = 0; // clean
+    setp(m_buffer.data(), m_buffer.data() + m_buffer.size()); // reset
     return 0;
 }
-

@@ -12,20 +12,41 @@
 
 #include <gloox/client.h>
 #include <gloox/messagehandler.h>
+#include <deque>
+#include <thread>
 
-class XmppBuffer: public std::streambuf, public gloox::MessageHandler {
+class Bot: public gloox::MessageHandler {
 public:
-    XmppBuffer(const std::string &server, const std::string &password);
-    virtual ~XmppBuffer();
+    Bot(const std::string& jid, const std::string& password);
+    virtual ~Bot();
 
-    virtual void handleMessage(const gloox::Message &msg, gloox::MessageSession *session) override ;
+    void sendMessage(const std::string&);
+
+private:
+    virtual void handleMessage(const gloox::Message&, gloox::MessageSession*) override ;
+
+    std::unique_ptr<gloox::Client> m_client;
+
+    std::thread m_thread;
+    std::mutex m_mutex;
+    std::condition_variable m_cond;
+
+    gloox::JID m_master;
+    std::deque<std::string> m_missingMessages;
+    bool m_work;
+};
+
+class XmppBuffer: public std::streambuf {
+public:
+    XmppBuffer(const std::string &userJid, const std::string &password);
+    virtual ~XmppBuffer();
 
     virtual int_type overflow(int_type c = traits_type::eof());
     virtual int sync();
 
 private:
-    std::vector<char> _buffer;
-    std::unique_ptr<gloox::Client> m_client;
+    std::unique_ptr<Bot> m_bot;
+    std::vector<char> m_buffer;
 };
 
 

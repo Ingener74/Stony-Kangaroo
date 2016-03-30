@@ -75,7 +75,7 @@ string Logger::getTime() const
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 
-	snprintf(date_time + strftime(date_time, 80, "%G%m%d %H%M%S", localtime(&rawtime)), dtm_size, ".%03ld", tv.tv_usec / 1000);
+	snprintf(date_time + strftime(date_time, 80, "%G%m%d %H%M%S", localtime(&rawtime)), dtm_size, ".%03d", tv.tv_usec / 1000);
 
 	return string{ date_time };
 }
