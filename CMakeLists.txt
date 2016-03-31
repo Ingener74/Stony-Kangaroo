@@ -11,15 +11,25 @@ include_directories(
 )
 
 set(SOURCES
-        src/Logger.h
         src/Logger.cpp
-        src/Output.h
+        src/Logger.h
         src/Output.cpp
-        src/PrintfBuffer.cpp src/PrintfBuffer.h src/XmppBuffer.cpp src/XmppBuffer.h)
+        src/Output.h
+        src/PrintfBuffer.cpp
+        src/PrintfBuffer.h
+        src/XmppBuffer.cpp
+        src/XmppBuffer.h
+        )
 add_library(Logger ${SOURCES})
+target_link_libraries(Logger
+        ${GLOOX_LIBRARIES}
+        pthread
+        )
 
 set(SOURCES
-    src/LoggerTest.cpp
-)
+        src/LoggerTest.cpp
+        )
 add_executable(LoggerTest ${SOURCES})
-target_link_libraries(LoggerTest Logger ${GLOOX_LIBRARIES})
+target_link_libraries(LoggerTest
+        Logger
+        )

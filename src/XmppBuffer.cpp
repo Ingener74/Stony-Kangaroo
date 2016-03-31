@@ -3,23 +3,25 @@
 //
 
 #include <gloox/message.h>
+#include <mutex>
 #include "XmppBuffer.h"
 
 using namespace std;
 using namespace gloox;
 
 Bot::Bot(const std::string &jid, const std::string &password) {
-    m_thread = thread([&]{
+    m_thread = thread([=]{
         try {
-            m_client.reset(new Client({jid}, password));
-            m_client->connect();
+            cout << "jid " << jid << ", password " << password << endl;
+            Client client{{jid}, password};
+            client.connect();
 
             unique_lock<mutex> lock(m_mutex);
             while(!m_missingMessages.empty() || m_work){
                 if(!m_missingMessages.empty() && m_master){
                     for(const auto &message : m_missingMessages){
                         Message msg{Message::MessageType::Chat, m_master, message};
-                        m_client->send(msg);
+                        client.send(msg);
                     }
                 }
                 m_cond.wait(lock);
@@ -31,6 +33,7 @@ Bot::Bot(const std::string &jid, const std::string &password) {
 }
 
 Bot::~Bot() {
+    m_thread.join();
 }
 
 void Bot::sendMessage(const std::string & message) {

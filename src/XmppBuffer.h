@@ -9,11 +9,13 @@
 #include <memory>
 #include <vector>
 #include <iostream>
+#include <deque>
+#include <thread>
+#include <condition_variable>
+#include <mutex>
 
 #include <gloox/client.h>
 #include <gloox/messagehandler.h>
-#include <deque>
-#include <thread>
 
 class Bot: public gloox::MessageHandler {
 public:

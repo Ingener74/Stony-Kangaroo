@@ -12,7 +12,7 @@ int main(int argc, char **argv) {
     cout << "Usage: ./LoggerTest <log-level: 0 - ERROR, 1 - WARNING, 2 - DEBUG, 3 - INFO,>" << endl;
     cout << "Example: ./LoggerTest 3" << endl;
 
-    Output::instance().setBuffer<XmppBuffer>("", "");
+    Output::instance().setBuffer<XmppBuffer>("bot1@example.com", "1");
 
 	if(argc > 1)
 		logger::Logger::setMaxLogLevel(static_cast<logger::Priority>(stoi(argv[1])));
